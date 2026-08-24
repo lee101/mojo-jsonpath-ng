@@ -95,11 +95,11 @@ Both implementations still create their normal result objects.
 
 | query (100,000 records) | Mojo | jsonpath-ng | speedup |
 |---|---:|---:|---:|
-| projection, prepared | 61.28 ms | 583.36 ms | 9.52x |
-| slice, prepared | 24.24 ms | 191.59 ms | 7.90x |
-| recursive descent, prepared | 12.65 ms | 1496.74 ms | 118.34x |
-| numeric filter, prepared | 5.77 ms | 347.13 ms | 60.21x |
-| numeric filter, cold | 50.12 ms | 490.92 ms | 9.80x |
+| projection, prepared | 52.79 ms | 492.55 ms | 9.33x |
+| slice, prepared | 18.13 ms | 131.91 ms | 7.28x |
+| recursive descent, prepared | 10.55 ms | 1460.79 ms | 138.41x |
+| numeric filter, prepared | 1.54 ms | 341.15 ms | 221.88x |
+| numeric filter, cold | 44.51 ms | 335.12 ms | 7.53x |
 
 Prepared traversal uses a contiguous direct-child index. Wildcards and
 unit-step slices copy that index with host-width SIMD and scalar tails, while
@@ -107,7 +107,12 @@ strided slices address children directly. Result contexts are materialized
 only when `.path`, `.context`, or `.full_path` is accessed. Supported cold
 filters use a path-guided evaluator instead of flattening unrelated branches.
 
-No GPU or parallel CPU path is provided.
+No GPU or parallel CPU path is provided. The native kernels are pointer-heavy
+tree traversals and output copies with less than two arithmetic operations per
+byte moved, so they do not have enough arithmetic intensity to justify GPU
+transfer and launch overhead. Every benchmarked kernel is already more than
+5x faster than upstream, so adding CPU thread-launch overhead is not justified
+by the current profile either.
 
 ## How it works
 
